@@ -33,7 +33,7 @@ export async function GET(req) {
     // latest order fetch
     if (latest === "true") {
       const latestOrder = await Order.find({})
-        .sort({ createdAt: -1 })
+        .sort({ _id: -1 })
         .limit(1)
         .lean();
       return NextResponse.json({ success: true, orders: latestOrder });

@@ -248,7 +248,8 @@ export default function AdminDashboard() {
               ).length
             }
             icon={ClipboardList}
-            href="/admin/orders/pending"
+            href="/admin/orders-by-table"
+            
           />
 
           <Card

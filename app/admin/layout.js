@@ -40,7 +40,7 @@ export default function AdminLayout({ children }) {
 
     checkLatestOrder();
 
-    const interval = setInterval(checkLatestOrder, 2000);
+    const interval = setInterval(checkLatestOrder, 1500);
     return () => clearInterval(interval);
   }, [session]);
 
@@ -83,15 +83,39 @@ if (
       );
 
     // FIRST LOAD
-    if (!lastOrderId) {
+// FIRST LOAD
+if (!lastOrderId) {
 
-      localStorage.setItem(
-        "lastOrderId",
-        orderId
-      );
+  localStorage.setItem(
+    "lastOrderId",
+    orderId
+  );
 
-      return;
-    }
+  // PLAY FOR FIRST LIVE ORDER ALSO
+  const audio =
+    new Audio("/notify.mp3");
+
+  audio.volume = 1;
+
+  audio.play().catch(() => {});
+
+  setToast({
+    table:
+      newest.table ||
+      "Table",
+    qty:
+      newest.totalQty ||
+      newest.items?.length,
+  });
+
+  setTimeout(() => {
+
+    setToast(null);
+
+  }, 4000);
+
+  return;
+}
 
     // NEW ORDER
     if (orderId !== lastOrderId) {
