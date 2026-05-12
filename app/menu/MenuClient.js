@@ -139,16 +139,18 @@ export default function MenuClient({
         <div className="flex items-center gap-3">
 
           {/* LOGO */}
-          <div className="relative h-11 w-11 rounded-full overflow-hidden border border-yellow-400 bg-black shadow-[0_0_25px_rgba(255,199,0,0.4)]">
-            <Image
-              src="/onebite.jpeg"
-              alt="QuickServe"
-              fill
-              className="object-cover"
-              sizes="44px"
-            />
-          </div>
+      <div className="relative h-14 w-32 overflow-hidden rounded-2xl border border-[#F5B041]/40 bg-[#111111] px-2 shadow-[0_0_25px_rgba(245,176,65,0.18)]">
 
+  <Image
+    src="/onebite.jpeg"
+    alt="QuickServe"
+    fill
+    className="object-contain p-2"
+    sizes="160px"
+    priority
+  />
+
+</div>
           {/* TITLE */}
           <div className="flex-1">
 

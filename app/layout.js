@@ -9,10 +9,15 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Digital Menu System",
-  description: "Restaurant digital menu built with Next.js",
-};
+  title: "QuickServe | Smart Restaurant Ordering System",
 
+  description:
+    "QuickServe is a modern QR-based restaurant ordering system for cafes, restaurants and bakeries.",
+
+  icons: {
+    icon: "/icon.png",
+  },
+};
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
