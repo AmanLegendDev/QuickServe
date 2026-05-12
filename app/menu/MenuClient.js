@@ -18,35 +18,70 @@ export default function MenuClient({
   const { cart, addToCart, increaseQty, decreaseQty } = useCart();
 
   const [liveCategories] = useState(categories);
-  const [liveItems, setLiveItems] = useState(items);
+  const [liveItems] = useState(items);
 
-  const [selected, setSelected] = useState({});
+  // INSTANT CATEGORY SWITCH
+  const [activeCat, setActiveCat] = useState(
+    activeCategoryId || categories[0]?._id
+  );
+
   const [recentOrder, setRecentOrder] = useState(null);
-  const [customer, setCustomer] = useState(null);
   const [localTableInfo, setLocalTableInfo] = useState(tableInfo);
 
-
-useEffect(() => {
-  const done = sessionStorage.getItem("orderCompleted");
-  if (done) {
-    localStorage.removeItem("cart");
-    sessionStorage.removeItem("cart");
-    sessionStorage.removeItem("selectedItems");
-    sessionStorage.removeItem("orderCompleted");
-  }
-}, []);
-
-
-
-  // Load customer (name + phone) from localStorage
+  // CLEAR AFTER ORDER
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = localStorage.getItem("onebite_user");
-    if (saved) setCustomer(JSON.parse(saved));
+    const done = sessionStorage.getItem("orderCompleted");
+
+    if (done) {
+      localStorage.removeItem("cart");
+      sessionStorage.removeItem("cart");
+      sessionStorage.removeItem("selectedItems");
+      sessionStorage.removeItem("orderCompleted");
+    }
   }, []);
 
-  const activeCat = activeCategoryId || categories[0]?._id;
+  // SAVE TABLE INFO
+  useEffect(() => {
+    if (localTableInfo) {
+      sessionStorage.setItem(
+        "tableInfo",
+        JSON.stringify(localTableInfo)
+      );
+    }
+  }, [localTableInfo]);
 
+  // RESTORE TABLE INFO
+  useEffect(() => {
+    const savedTable = sessionStorage.getItem("tableInfo");
+
+    if (savedTable) {
+      try {
+        setLocalTableInfo(JSON.parse(savedTable));
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  }, []);
+
+  // LAST ORDER
+  useEffect(() => {
+    const saved = localStorage.getItem("latestOrder");
+
+    if (saved) {
+      setRecentOrder(JSON.parse(saved));
+    }
+  }, []);
+
+  // KEEP TAB SCROLL
+  useEffect(() => {
+    const saved = sessionStorage.getItem("tabsScroll");
+
+    if (saved && tabsRef.current) {
+      tabsRef.current.scrollLeft = Number(saved);
+    }
+  }, []);
+
+  // CATEGORY COUNT
   const getCategoryCount = (catId) => {
     return cart
       .filter(
@@ -57,168 +92,122 @@ useEffect(() => {
       .reduce((sum, item) => sum + item.qty, 0);
   };
 
-  // Save table info when QR menu is opened
-  useEffect(() => {
-    if (localTableInfo && localTableInfo.id) {
-      const safe = {
-        id: localTableInfo.id,
-        name: localTableInfo.name,
-        number: localTableInfo.number,
-      };
-
-      sessionStorage.setItem("tableInfo", JSON.stringify(safe));
-    }
-  }, [localTableInfo]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("latestOrder");
-    if (saved) setRecentOrder(JSON.parse(saved));
-  }, []);
-
-  useEffect(() => {
-    const updated = {};
-    cart.forEach((item) => (updated[item._id] = item.qty));
-    setSelected(updated);
-  }, [cart]);
-
-  useEffect(() => {
-    setLiveItems(items);
-  }, [items]);
-
+  // TOTALS
   const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-  const totalPrice = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  // Visible categories limited to active
+  const totalPrice = cart.reduce(
+    (s, i) => s + i.qty * i.price,
+    0
+  );
+
+  // TABLE LABEL
+  const tableLabel =
+    localTableInfo?.name ||
+    (localTableInfo?.number
+      ? `Table ${localTableInfo.number}`
+      : null);
+
+  // ACTIVE CATEGORY
   const visibleCategories = liveCategories.filter(
     (cat) => String(cat._id) === String(activeCat)
   );
 
-  useEffect(() => {
-    const saved = sessionStorage.getItem("tabsScroll");
-    if (saved && tabsRef.current) {
-      tabsRef.current.scrollLeft = Number(saved);
-    }
-  }, [activeCategoryId]);
-
-  const tableLabel =
-    localTableInfo?.name ||
-    (localTableInfo?.number ? `Table ${localTableInfo.number}` : "Unrecognized Table");
-
-  // ALWAYS restore table info even on category change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const savedTable = sessionStorage.getItem("tableInfo");
-    if (savedTable) {
-      try {
-        const parsed = JSON.parse(savedTable);
-
-        // FORCE SET tableInfo INTO STATE
-        setLocalTableInfo(parsed);
-      } catch (e) {}
-    }
-  }, []);
-
-  // Helper: get qty in cart for an item
+  // QTY HELPER
   const getCartQty = (itemId) => {
     const inCart = cart.find((c) => c._id === itemId);
     return inCart?.qty ?? 0;
   };
 
-  // Helper: check if we can add more of item based on stock
+  // STOCK HELPER
   const canAddMore = (item) => {
     if (item.outOfStock) return false;
-    if (typeof item.stock !== "number") return true; // unlimited or not set
+
+    if (typeof item.stock !== "number") return true;
+
     const current = getCartQty(item._id);
+
     return current < Number(item.stock);
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white pb-28">
-      {/* TOP GRADIENT + HEADER + TABS */}
-      <div className="sticky top-0 z-20 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]/95 backdrop-blur-md border-b border-yellow-500/10 px-5 pt-4 pb-3">
-        {/* HEADER BAR */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Logo */}
-          <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full overflow-hidden border border-yellow-400/80 shadow-[0_0_20px_rgba(248,197,55,0.4)] bg-black">
+    <div className="min-h-screen bg-[#0d0d0d] text-white pb-28">
+
+      {/* HEADER */}
+      <div className="sticky top-0 z-30 bg-[#0d0d0d]/95 backdrop-blur-xl border-b border-yellow-500/10 px-4 pt-4 pb-3">
+
+        {/* TOP */}
+        <div className="flex items-center gap-3">
+
+          {/* LOGO */}
+          <div className="relative h-11 w-11 rounded-full overflow-hidden border border-yellow-400 bg-black shadow-[0_0_25px_rgba(255,199,0,0.4)]">
             <Image
               src="/onebite.jpeg"
-              alt="OneBite Logo"
+              alt="QuickServe"
               fill
               className="object-cover"
-              sizes="56px"
+              sizes="44px"
             />
           </div>
 
-          {/* Title + Info */}
+          {/* TITLE */}
           <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              <span className="text-yellow-400">ONEBITE</span>{" "}
-              <span className="text-white">Menu</span> <span>🍕</span>
+
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              <span className="text-yellow-400 drop-shadow-[0_0_12px_rgba(255,199,0,0.35)]">
+                QuickServe
+              </span>
             </h1>
 
-            {/* Customer + table line */}
-            {(customer || localTableInfo) && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-gray-300">
-                {customer && (
-                  <>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#151515] text-[10px]">
-                        👤
-                      </span>
-                      <span className="font-medium">{customer.name}</span>
-                    </span>
-                    <span className="h-1 w-1 rounded-full bg-gray-500" />
-                    <span className="font-mono text-gray-400">
-                      📱 {customer.phone}
-                    </span>
-                  </>
-                )}
-
-                {tableLabel && (
-                  <>
-                    {customer && (
-                      <span className="h-1 w-1 rounded-full bg-gray-500" />
-                    )}
-                    <span className="inline-flex items-center gap-1 rounded-full border border-yellow-400/70 bg-yellow-400/10 px-3 py-1 font-semibold text-[11px] text-yellow-300">
-                      🪑 {tableLabel}
-                    </span>
-                  </>
-                )}
+            {tableLabel && (
+              <div className="mt-1">
+                <span className="inline-flex items-center gap-1 rounded-full border border-yellow-400/40 bg-yellow-400/10 px-3 py-1 text-[11px] font-bold text-yellow-300 shadow-[0_0_10px_rgba(255,199,0,0.12)]">
+                  🪑 {tableLabel}
+                </span>
               </div>
             )}
+
           </div>
         </div>
 
         {/* CATEGORY TABS */}
         <div
           ref={tabsRef}
-          className="mt-4 flex gap-3 overflow-x-auto no-scrollbar pb-1"
+          className="mt-4 flex gap-2 overflow-x-auto no-scrollbar"
         >
           {liveCategories.map((cat) => {
-            const isActive = String(activeCat) === String(cat._id);
+
+            const isActive =
+              String(activeCat) === String(cat._id);
+
             const count = getCategoryCount(cat._id);
 
             return (
               <motion.button
                 key={cat._id}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  const savedScroll = tabsRef.current?.scrollLeft || 0;
-                  sessionStorage.setItem("tabsScroll", savedScroll);
 
-                  router.push(`/menu/${String(cat._id)}`);
+                  const savedScroll =
+                    tabsRef.current?.scrollLeft || 0;
+
+                  sessionStorage.setItem(
+                    "tabsScroll",
+                    savedScroll
+                  );
+
+                  setActiveCat(cat._id);
                 }}
-                whileTap={{ scale: 0.9 }}
-                className={`whitespace-nowrap px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all border backdrop-blur
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition-all border
                   ${
                     isActive
-                      ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(248,197,55,0.7)]"
-                      : "bg-[#111111] text-gray-200 border-[#333333] hover:border-yellow-400/70 hover:text-yellow-200"
+                      ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(255,199,0,0.4)]"
+                      : "bg-[#1A1A1A] text-gray-300 border-[#2A2A2A]"
                   }`}
               >
                 {cat.name}
+
                 {count > 0 && (
-                  <span className="ml-1 text-[11px] sm:text-xs opacity-90">
+                  <span className="ml-1 opacity-90">
                     ({count})
                   </span>
                 )}
@@ -228,216 +217,236 @@ useEffect(() => {
         </div>
       </div>
 
-      <div className="px-5 pt-4">
-        {/* LAST ORDER BANNER */}
-        {recentOrder && (
-          <div className="w-full bg-[#111111] rounded-2xl shadow-lg border border-yellow-500/40 px-5 py-3 flex justify-between items-center mt-2">
-            <div>
-              <p className="font-semibold text-yellow-300 text-sm sm:text-base">
-                Last order •{" "}
-                {recentOrder.tableName || recentOrder.table || "Table"}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">
-                Tap to view your previous bill
-              </p>
-            </div>
+      {/* CONTENT */}
+      <div className="px-4 pt-4">
 
-            <button
-              onClick={() => router.push("/order-success")}
-              className="bg-yellow-400 text-black px-4 py-2 rounded-full text-xs sm:text-sm font-semibold hover:bg-yellow-300 transition shadow-md"
-            >
-              View
-            </button>
+        {/* LAST ORDER */}
+        {recentOrder && (
+          <div className="mb-5 rounded-2xl border border-yellow-500/20 bg-[#151515] px-4 py-3 shadow-lg">
+
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-sm font-bold text-yellow-300">
+                  Last Order
+                </p>
+
+                <p className="mt-0.5 text-[11px] text-gray-400">
+                  View your latest order summary
+                </p>
+              </div>
+
+              <button
+                onClick={() =>
+                  router.push("/order-success")
+                }
+                className="rounded-full bg-yellow-400 px-4 py-2 text-xs font-extrabold text-black shadow-[0_0_14px_rgba(255,199,0,0.3)]"
+              >
+                View
+              </button>
+
+            </div>
           </div>
         )}
 
-        {/* ITEMS GRID */}
-        <div className="mt-8 space-y-16">
+        {/* ITEMS */}
+        <div className="space-y-10">
+
           {visibleCategories.map((cat) => (
+
             <section key={cat._id}>
-              <div className="flex items-baseline justify-between gap-2 mb-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-wide">
-                  {cat.name}{" "}
-                  {getCategoryCount(cat._id) > 0 && `(${getCategoryCount(cat._id)})`}
+
+              {/* TITLE */}
+              <div className="mb-4 flex items-center justify-between">
+
+                <h2 className="text-xl font-bold text-yellow-300">
+                  {cat.name}
                 </h2>
+
               </div>
 
+              {/* GRID */}
               <motion.div
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6"
                 initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.35 }}
-                viewport={{ once: true }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
               >
+
                 {liveItems
                   .filter(
                     (item) =>
-                      // same category
-                      (String(item.category) === String(cat._id) ||
-                        String(item.category?._id) === String(cat._id)) &&
-                      // HIDE out of stock items from customer view
+                      (String(item.category) ===
+                        String(cat._id) ||
+                        String(item.category?._id) ===
+                          String(cat._id)) &&
                       !item.outOfStock
                   )
                   .map((item) => {
-                    const inCart = cart.find((c) => c._id === item._id);
-                    const qty = inCart?.qty ?? 0;
-                    const isSelected = selected[item._id] > 0;
 
-                    // Stock label logic
-                    const stockNum =
-                      typeof item.stock === "number" ? Number(item.stock) : null;
-                    const lowLimit =
-                      typeof item.lowStockLimit === "number"
-                        ? Number(item.lowStockLimit)
-                        : 5;
+                    const qty =
+                      cart.find(
+                        (c) => c._id === item._id
+                      )?.qty ?? 0;
 
+                    const addDisabled =
+                      !canAddMore(item);
+
+                    // STOCK
                     let stockBadge = null;
-                    if (item.outOfStock) {
+
+                    if (
+                      typeof item.stock === "number" &&
+                      item.stock <=
+                        (item.lowStockLimit || 5)
+                    ) {
                       stockBadge = (
-                        <span className="text-red-400 text-xs font-semibold">
-                          Out of stock
-                        </span>
-                      );
-                    } else if (stockNum !== null && stockNum <= lowLimit) {
-                      stockBadge = (
-                        <span className="text-yellow-400 text-xs font-semibold">
-                          Only {stockNum} left
+                        <span className="text-[10px] font-semibold text-yellow-400">
+                          Only {item.stock} left
                         </span>
                       );
                     } else {
                       stockBadge = (
-                        <span className="text-green-400 text-xs font-semibold">
+                        <span className="text-[10px] font-semibold text-green-400">
                           In stock
                         </span>
                       );
                     }
 
-                    const addDisabled = !canAddMore(item);
-
                     return (
                       <motion.div
                         key={item._id}
-                        whileHover={{ scale: 1.03 }}
-                        className="bg-[#111111] rounded-2xl shadow-lg border border-[#333333] hover:border-yellow-400/80 overflow-hidden flex flex-col"
+                        whileTap={{ scale: 0.98 }}
+                        className="overflow-hidden rounded-2xl border border-yellow-500/10 bg-[#151515] shadow-lg"
                       >
+
                         {/* IMAGE */}
-                        <div className="h-40 w-full overflow-hidden">
+                        <div className="relative h-28 sm:h-36 w-full overflow-hidden">
+
                           <Image
                             src={item.image}
                             alt={item.name}
-                            width={500}
-                            height={300}
+                            fill
                             priority
-                            className="w-full h-full object-cover"
+                            className="object-cover"
                           />
+
                         </div>
 
-                        <div className="p-4 flex flex-col flex-grow">
-                          <h3 className="text-base sm:text-lg font-bold text-white line-clamp-2 min-h-[44px]">
+                        {/* BODY */}
+                        <div className="p-3">
+
+                          {/* NAME */}
+                          <h3 className="line-clamp-1 h-5 text-sm font-bold text-white">
                             {item.name}
                           </h3>
 
-                          <p className="text-gray-400 text-xs sm:text-sm mt-1 line-clamp-2 overflow-hidden">
+                          {/* DESC */}
+                          <p className="mt-1 line-clamp-1 text-[11px] text-gray-400">
                             {item.description}
                           </p>
 
-                          {/* STOCK BADGE */}
-                          <div className="mt-2">{stockBadge}</div>
-
-                          {/* QTY CONTROL */}
-                          <div className="flex items-center justify-center gap-4 mt-4">
-                            <button
-                              onClick={() => decreaseQty(item._id)}
-                              className="bg-[#2a2a2a] text-white w-9 h-9 flex items-center justify-center rounded-full text-lg font-bold hover:bg-[#3a3a3a]"
-                            >
-                              -
-                            </button>
-
-                            <span className="text-lg font-semibold text-yellow-400 w-6 text-center">
-                              {qty}
-                            </span>
-
-                            <button
-                              onClick={() => {
-                                // Prevent adding beyond stock
-                                if (addDisabled) {
-                                  alert("Stock limit reached.");
-                                  return;
-                                }
-                                qty === 0 ? addToCart(item) : increaseQty(item._id);
-                              }}
-                              className={`w-9 h-9 flex items-center justify-center rounded-full text-lg font-bold ${
-                                addDisabled
-                                  ? "bg-gray-600 text-gray-300 cursor-not-allowed"
-                                  : "bg-yellow-400 text-black hover:bg-yellow-300"
-                              }`}
-                            >
-                              +
-                            </button>
+                          {/* STOCK */}
+                          <div className="mt-2">
+                            {stockBadge}
                           </div>
 
-                          {/* PRICE + SELECT BUTTON */}
-                          <div className="flex items-center justify-between mt-4">
-                            <p className="text-yellow-400 font-bold text-lg">
+                          {/* PRICE + QTY */}
+                          <div className="mt-4 flex items-center justify-between">
+
+                            <p className="text-sm font-extrabold text-yellow-400">
                               ₹{item.price}
                             </p>
 
-                            {isSelected ? (
-                              <button className="px-4 py-1.5 rounded-full text-xs font-semibold bg-green-500 text-black shadow-sm">
-                                Selected ({selected[item._id]})
+                            <div className="flex items-center gap-2">
+
+                              {/* MINUS */}
+                              <button
+                                onClick={() =>
+                                  decreaseQty(item._id)
+                                }
+                                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#252525] border border-yellow-500/10 text-sm font-bold text-white active:scale-95"
+                              >
+                                -
                               </button>
-                            ) : (
-                              <motion.button
-                                whileTap={{ scale: 0.95 }}
+
+                              {/* QTY */}
+                              <span className="w-4 text-center text-sm font-bold text-yellow-300">
+                                {qty}
+                              </span>
+
+                              {/* PLUS */}
+                              <button
                                 onClick={() => {
-                                  if (qty < 1) {
-                                    alert("Please select at least 1 quantity.");
+
+                                  if (addDisabled)
                                     return;
-                                  }
-                                  setSelected((prev) => ({
-                                    ...prev,
-                                    [item._id]: qty,
-                                  }));
+
+                                  qty === 0
+                                    ? addToCart(item)
+                                    : increaseQty(
+                                        item._id
+                                      );
                                 }}
-                                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
+                                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold active:scale-95
                                   ${
-                                    qty < 1
-                                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                      : "bg-yellow-400 text-black hover:bg-yellow-300"
+                                    addDisabled
+                                      ? "bg-gray-700 text-gray-400"
+                                      : "bg-yellow-400 text-black shadow-[0_0_14px_rgba(255,199,0,0.3)]"
                                   }`}
                               >
-                                Select
-                              </motion.button>
-                            )}
+                                +
+                              </button>
+
+                            </div>
                           </div>
+
                         </div>
                       </motion.div>
                     );
                   })}
+
               </motion.div>
+
             </section>
           ))}
+
         </div>
       </div>
 
-      {/* CART FOOTER */}
+      {/* CART BAR */}
       {totalQty > 0 && (
-        <div className="fixed bottom-0 left-0 w-full bg-[#090909]/95 backdrop-blur-lg border-t border-yellow-500/40 shadow-[0_-4px_25px_rgba(0,0,0,0.8)] px-5 py-4 flex justify-between items-center z-30">
-          <p className="font-semibold text-yellow-200 text-base sm:text-lg">
-            {totalQty} items • ₹{totalPrice}
-          </p>
-          <button
-            onClick={() => {
-              router.push("/order-review");
-            }}
-            className={
-              "px-6 sm:px-8 py-2.5 rounded-full font-bold transition bg-yellow-400 text-black hover:bg-yellow-300 active:scale-95"
-            }
-          >
-            Proceed →
-          </button>
+
+        <div className="fixed bottom-0 left-0 z-40 w-full border-t border-yellow-500/20 bg-[#090909]/95 px-4 py-3 backdrop-blur-xl">
+
+          <div className="flex items-center justify-between">
+
+            <div>
+
+              <p className="text-sm font-bold text-yellow-200">
+                {totalQty} items
+              </p>
+
+              <p className="text-xs text-gray-400">
+                Total ₹{totalPrice}
+              </p>
+
+            </div>
+
+            <button
+              onClick={() =>
+                router.push("/order-review")
+              }
+              className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-extrabold text-black shadow-[0_0_18px_rgba(255,199,0,0.35)] active:scale-95"
+            >
+              View Cart
+            </button>
+
+          </div>
+
         </div>
       )}
+
     </div>
   );
 }

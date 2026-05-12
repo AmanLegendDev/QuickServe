@@ -19,6 +19,8 @@ import {
   X,
   LogOut,
   HomeIcon,
+  ClipboardList,
+  UtensilsCrossed
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
@@ -43,47 +45,104 @@ export default function AdminLayout({ children }) {
   }, [session]);
 
   async function checkLatestOrder() {
-    try {
-      const res = await fetch("/api/orders?latest=true", {
+
+  try {
+
+    const res = await fetch(
+      "/api/orders?latest=true",
+      {
         cache: "no-store",
+      }
+    );
+
+    const data =
+      await res.json();
+
+    const newest =
+      data?.orders?.[0];
+
+    if (!newest) return;
+
+    // ONLY PENDING ORDERS
+if (
+  newest.status
+    ?.toLowerCase() !==
+  "pending"
+) {
+  return;
+}
+    console.log("LATEST:", newest);
+
+    const orderId =
+      newest._id;
+
+    // LAST ORDER ID
+    const lastOrderId =
+      localStorage.getItem(
+        "lastOrderId"
+      );
+
+    // FIRST LOAD
+    if (!lastOrderId) {
+
+      localStorage.setItem(
+        "lastOrderId",
+        orderId
+      );
+
+      return;
+    }
+
+    // NEW ORDER
+    if (orderId !== lastOrderId) {
+
+      // SOUND
+      const audio =
+        new Audio(
+          "/notify.mp3"
+        );
+
+      audio.volume = 1;
+
+      audio.play().catch(() => {});
+
+      // VIBRATE
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+
+      // TOAST
+      setToast({
+        table:
+          newest.table ||
+          "Table",
+        qty:
+          newest.totalQty ||
+          newest.items?.length,
       });
 
-      const data = await res.json();
-      const newest = data?.orders?.[0];
-      if (!newest) return;
+      // SAVE NEW ID
+      localStorage.setItem(
+        "lastOrderId",
+        orderId
+      );
 
-      const orderTime = new Date(newest.createdAt).getTime();
+      // REMOVE TOAST
+      setTimeout(() => {
 
-      // 🔥 Load saved time from localStorage
-      let savedTime = localStorage.getItem("lastOrderTime");
-      savedTime = savedTime ? Number(savedTime) : null;
+        setToast(null);
 
-      // FIRST RUN → JUST SAVE, DO NOT RING
-      if (!savedTime) {
-        localStorage.setItem("lastOrderTime", orderTime);
-        return;
-      }
-
-      // 🔥 REAL NEW ORDER DETECTED
-      if (orderTime > savedTime) {
-        console.log("🔥 NEW ORDER DETECTED — FIXED VERSION");
-
-        new Audio("/notify.mp3").play().catch(() => {});
-
-        setToast({
-          table: newest.tableName || newest.table,
-          qty: newest.totalQty,
-        });
-
-        setTimeout(() => setToast(null), 3000);
-
-        // Save new timestamp
-        localStorage.setItem("lastOrderTime", orderTime);
-      }
-    } catch (err) {
-      console.log("CHECK ERROR:", err);
+      }, 4000);
     }
+
+  } catch (err) {
+
+    console.log(
+      "Notification Error:",
+      err
+    );
   }
+}
 
   // ------------------------------------------
   // ADMIN PROTECTION
@@ -101,17 +160,45 @@ export default function AdminLayout({ children }) {
   // ------------------------------------------
   // NAV LINKS (Orders removed)
   // ------------------------------------------
-  const links = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Menu Items", href: "/admin/items", icon: PlusSquare },
-    { name: "Categories", href: "/admin/categories", icon: List },
-    { name: "Tables", href: "/admin/orders-by-table", icon: LayoutGrid },
-    { name: "Customers", href: "/admin/customers", icon: Users },
-    { name: "Ratings", href: "/admin/ratings", icon: Star },
-    { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { name: "Home", href: "/", icon: HomeIcon },
-  ];
+const links = [
 
+  {
+    name: "Dashboard",
+    href: "/admin",
+    icon: LayoutDashboard,
+  },
+
+  {
+    name: "Live Orders",
+    href: "/admin/orders/pending",
+    icon: ClipboardList,
+  },
+
+  {
+    name: "Products",
+    href: "/admin/items",
+    icon: UtensilsCrossed,
+  },
+
+  {
+    name: "Categories",
+    href: "/admin/categories",
+    icon: List,
+  },
+
+  {
+    name: " Active Tables",
+    href: "/admin/orders-by-table",
+    icon: LayoutGrid,
+  },
+
+  {
+    name: "Website",
+    href: "/",
+    icon: HomeIcon,
+  },
+
+];
   const activeClass =
     "flex items-center gap-3 px-3 py-2 rounded-lg bg-[#18181b] text-white font-semibold border border-[#ff6a3d] shadow-[0_0_15px_rgba(255,106,61,0.18)]";
 
@@ -201,30 +288,44 @@ export default function AdminLayout({ children }) {
       </div>
 
       {/* TOAST */}
-      {toast && (
-        <div className="fixed top-6 right-6 bg-[#111] border border-yellow-500 text-white px-5 py-3 rounded-xl shadow-lg z-[9999] animate-slide-up">
-          <p className="font-semibold text-yellow-400">New Order!</p>
-          <p className="text-sm">
-            Table {toast.table} • {toast.qty} items
-          </p>
-        </div>
-      )}
+{toast && (
 
-      <style jsx>{`
-        @keyframes slideUp {
-          from {
-            transform: translateY(-10px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-up {
-          animation: slideUp 0.3s ease-out;
-        }
-      `}</style>
+  <div className="fixed top-5 right-5 z-[9999]">
+
+    <div className="min-w-[280px] rounded-2xl border border-[#F5B041]/30 bg-[#111111] p-4 shadow-[0_0_25px_rgba(245,176,65,0.18)] backdrop-blur-xl">
+
+      <div className="flex items-start gap-3">
+
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F5B041]/15 text-2xl">
+
+          🔔
+
+        </div>
+
+        <div className="flex-1">
+
+          <p className="text-sm font-bold text-[#F5B041]">
+            New Order Received
+          </p>
+
+          <p className="mt-1 text-sm text-gray-300">
+
+            {toast.table}
+            {" • "}
+            {toast.qty} items
+
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+)}
+
+ 
     </div>
   );
 }

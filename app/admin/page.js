@@ -1,362 +1,349 @@
 "use client";
 
-
-import { useState } from "react";
-import { useLayoutEffect } from "react";
-import { usePathname } from "next/navigation";
-
-
-
 import Link from "next/link";
 import {
-  Layers,
-  Utensils,
-  ShoppingBag,
-  Users,
-  Star,
-  TrendingUp,
-  AlertTriangle,
   ClipboardList,
-  Wallet,
-  LayoutGrid
+  Utensils,
+  Layers,
+  LayoutGrid,
 } from "lucide-react";
-import { useEffect } from "react";
 
+import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
-  const pathname = usePathname();
 
-  const [categories, setCategories] = useState([]);
-  const [items, setItems] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [rating, setRating] = useState({ average: 0, total: 0 });
+  const [orders, setOrders] =
+    useState([]);
 
+  const [items, setItems] =
+    useState([]);
+
+  const [categories, setCategories] =
+    useState([]);
+
+  // LOAD DATA
   useEffect(() => {
-  if ('scrollRestoration' in window.history) {
-    window.history.scrollRestoration = 'manual';
-  }
-}, []);
 
-
-  // 🔥 LIVE DASHBOARD POLLING
-useEffect(() => {
-  const interval = setInterval(() => {
     loadOrders();
-    loadUsers();
     loadItems();
     loadCategories();
-    loadRating();
-  }, 2000);
 
-  return () => clearInterval(interval);
-}, []);
+    // LIVE REFRESH
+    const interval =
+      setInterval(() => {
 
+        loadOrders();
 
-useEffect(() => {
-  const el = document.getElementById("admin-scroll");
-  if (!el) return;
+      }, 3000);
 
-  const onScroll = () => {
-    sessionStorage.setItem(
-      "admin-dashboard-scroll",
-      el.scrollTop.toString()
-    );
-  };
+    return () =>
+      clearInterval(interval);
 
-  el.addEventListener("scroll", onScroll);
-  return () => el.removeEventListener("scroll", onScroll);
-}, []);
-
-
-
-
-
-// ✅ RESTORE SCROLL POSITION
-useLayoutEffect(() => {
-  const el = document.getElementById("admin-scroll");
-  const saved = sessionStorage.getItem("admin-dashboard-scroll");
-
-  if (el && saved) {
-    el.scrollTop = parseInt(saved, 10);
-  }
-}, []);
-
-
-
-
-
-  // ⭐ LOADERS (no backend change)
-  async function loadRating() {
-    try {
-      const res = await fetch("/api/rating/average", { cache: "no-store" });
-      const data = await res.json();
-      setRating(data);
-    } catch (err) { }
-  }
-
-  async function loadCategories() {
-    const res = await fetch("/api/categories");
-    const data = await res.json();
-    setCategories(Array.isArray(data) ? data : []);
-  }
-
-  async function loadItems() {
-    const res = await fetch("/api/items?count=true");
-    const data = await res.json();
-    setItems(new Array(data.count));
-  }
-
-  async function loadOrders() {
-    const res = await fetch("/api/orders");
-    const data = await res.json();
-    setOrders(data.orders || []);
-  }
-
-  async function loadUsers() {
-    const res = await fetch("/api/customer-users", { cache: "no-store" });
-    const data = await res.json();
-    setUsers(data.users || []);
-  }
-
-  useEffect(() => {
-    loadCategories();
-    loadItems();
-    loadOrders();
-    loadUsers();
-    loadRating();
   }, []);
-function Card({ title, count, icon: Icon, href }) {
-  const handleClick = () => {
-    sessionStorage.setItem(
-      "admin-dashboard-scroll",
-      window.scrollY.toString()
-    );
-  };
 
-  const handleClickForScrool = () => {
-  const el = document.getElementById("admin-scroll");
-  if (el) {
-    sessionStorage.setItem(
-      "admin-dashboard-scroll",
-      el.scrollTop.toString()
-    );
+  // ORDERS
+  async function loadOrders() {
+
+    try {
+
+      const res = await fetch(
+        "/api/orders",
+        {
+          cache: "no-store",
+        }
+      );
+
+      const data =
+        await res.json();
+
+      setOrders(
+        data.orders || []
+      );
+
+    } catch (err) {
+      console.log(err);
+    }
   }
-};
 
-  return (
-    <Link href={href} onClick={handleClickForScrool}>
-      <div className="p-6 bg-[#111] rounded-xl border border-[#222] hover:border-yellow-400 transition shadow-md hover:shadow-yellow-500/10 cursor-pointer">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-300">{title}</h2>
-          <Icon size={24} className="text-gray-400" />
-        </div>
+  // ITEMS
+  async function loadItems() {
 
-        <p className="text-4xl font-bold text-white mt-3">{count}</p>
+    try {
 
-        <div className="text-yellow-400 text-xs mt-2 flex items-center gap-1">
-          View →
-        </div>
-      </div>
-    </Link>
-  );
-}
+      const res = await fetch(
+        "/api/items?count=true"
+      );
 
+      const data =
+        await res.json();
 
-  return (
-    <div
-  id="admin-scroll"
-  className="pt-4 h-[calc(100vh-64px)] overflow-y-auto"
->
+      setItems(
+        new Array(
+          data.count || 0
+        )
+      );
 
-      {/* HEADER */}
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-white">Admin Dashboard</h1>
-        <p className="text-gray-400 text-sm">
-          Restaurant performance overview & management panel.
-        </p>
-      </div>
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
-      {/* ⭐ ROW 1: BUSINESS OVERVIEW */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+  // CATEGORIES
+  async function loadCategories() {
 
-        {/* ⭐ Rating */}
-        <Link href="/admin/ratings">
-          <div className="p-6 bg-gradient-to-br from-[#242424] to-[#111] rounded-xl border border-[#333] hover:border-yellow-400 shadow-lg transition cursor-pointer">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-300">OneBite Rating</span>
-              <Star size={24} className="text-yellow-300" />
-            </div>
+    try {
 
-            <p className="text-5xl font-extrabold text-yellow-300 mt-3">
-              {rating.average.toFixed(1)}★
+      const res = await fetch(
+        "/api/categories"
+      );
+
+      const data =
+        await res.json();
+
+      setCategories(
+        Array.isArray(data)
+          ? data
+          : []
+      );
+
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  // CARD
+  function Card({
+    title,
+    count,
+    icon: Icon,
+    href,
+  }) {
+
+    return (
+      <Link href={href}>
+
+        <div className="rounded-2xl border border-[#222] bg-[#111] p-5 transition hover:border-[#FFB100] hover:shadow-[0_0_25px_rgba(255,177,0,0.18)]">
+
+          <div className="flex items-center justify-between">
+
+            <p className="text-sm font-medium text-gray-400">
+              {title}
             </p>
 
-            <p className="text-xs text-gray-400">{rating.total} reviews</p>
+            <Icon
+              size={22}
+              className="text-[#FFB100]"
+            />
 
-            <div className="text-yellow-400 text-xs mt-3 flex items-center gap-1">
-              View →
-            </div>
           </div>
-        </Link>
 
-        <Card
-          title="Total Orders"
-          count={orders.filter(o =>
-  o.status === "served" && o.paymentStatus === "paid"
-).length}
+          <h2 className="mt-4 text-4xl font-extrabold text-white">
+            {count}
+          </h2>
 
-          icon={ShoppingBag}
-          href="/admin/orders/history"
-        />
+          <p className="mt-2 text-xs text-[#FFB100]">
+            Open →
+          </p>
 
-        <Card
-          title="Menu Items"
-          count={items.length}
-          icon={Utensils}
-          href="/admin/items"
-        />
+        </div>
 
-        <Card
-          title="Customers"
-          count={users.length}
-          icon={Users}
-          href="/admin/customers"
-        />
+      </Link>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0d0d0d] px-4 py-6 text-white">
+
+      {/* HEADER */}
+      <div className="mb-10">
+
+        <h1 className="text-4xl font-extrabold tracking-tight">
+
+          <span className="text-[#FFB100]">
+            QuickServe
+          </span>{" "}
+
+          Admin
+        </h1>
+
+        <p className="mt-2 text-sm text-gray-400">
+          Lightweight restaurant order management
+        </p>
+
       </div>
 
-      {/* ⭐ ROW 2: ORDER WORKFLOW */}
-      <h3 className="text-lg font-semibold text-gray-300 mb-3">Order Workflow</h3>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      {/* OVERVIEW */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 
         <Card
-          title="Pending Orders"
-          count={orders.filter(o => o.status === "pending").length}
+          title="Pending"
+          count={
+            orders.filter(
+              (o) =>
+                o.status ===
+                "pending"
+            ).length
+          }
           icon={ClipboardList}
           href="/admin/orders/pending"
         />
 
         <Card
           title="Preparing"
-          count={orders.filter(o => o.status === "preparing").length}
+          count={
+            orders.filter(
+              (o) =>
+                o.status ===
+                "preparing"
+            ).length
+          }
           icon={Utensils}
           href="/admin/orders/preparing"
         />
 
         <Card
-          title="Ready to Serve"
-          count={orders.filter(o => o.status === "ready").length}
-          icon={Layers}
+          title="Ready"
+          count={
+            orders.filter(
+              (o) =>
+                o.status ===
+                "ready"
+            ).length
+          }
+          icon={LayoutGrid}
           href="/admin/orders/ready"
         />
 
         <Card
-          title="Completed Orders"
-          count={orders.filter(o => 
-  o.status === "served" && o.paymentStatus === "paid"
-).length}
-
-          icon={TrendingUp}
+          title="Served"
+          count={
+            orders.filter(
+              (o) =>
+                o.status ===
+                "served"
+            ).length
+          }
+          icon={Layers}
           href="/admin/orders/completed"
         />
+
       </div>
 
-      {/* ⭐ ROW 3: PAYMENTS */}
-      <h3 className="text-lg font-semibold text-gray-300 mb-3">Payments</h3>
+      {/* MANAGEMENT */}
+      <div className="mt-12">
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <h2 className="mb-4 text-lg font-bold text-white">
+          Management
+        </h2>
 
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 
-<Card
-  title="Payment Not Selected"
-  count={orders.filter(
-    o =>
-      (o.paymentStatus === "unpaid" || o.paymentStatus === "pending") &&
-      (!o.paymentMethod || o.paymentMethod === "")
-  ).length}
-  icon={AlertTriangle}
-  href="/admin/payments/not-selected"
-/>
+          <Card
+            title="Active Orders"
+            count={
+              orders.filter(
+                (o) =>
+                  o.status !==
+                  "served"
+              ).length
+            }
+            icon={ClipboardList}
+            href="/admin/orders/pending"
+          />
 
+          <Card
+            title="Products"
+            count={items.length}
+            icon={Utensils}
+            href="/admin/items"
+          />
 
-        <Card
-          title="Pending Payments"
-          count={orders.filter(o => o.paymentStatus === "pending").length}
-          icon={AlertTriangle}
-          href="/admin/payments"
-        />
+          <Card
+            title="Categories"
+            count={categories.length}
+            icon={Layers}
+            href="/admin/categories"
+          />
 
-        <Card
-          title="Completed Payments"
-          count={orders.filter(o => o.paymentStatus === "paid").length}
-          icon={Wallet}
-          href="/admin/payments/completed"
-        />
-
-        <Card
-          title="Payment Analytics"
-          count={users.length}
-          icon={TrendingUp}
-          href="/admin/analytics"
-        />
+        </div>
       </div>
 
-      {/* ⭐ ROW 4: MANAGEMENT */}
-      <h3 className="text-lg font-semibold text-gray-300 mb-3">Management</h3>
+      {/* QUICK ACTIONS */}
+      <div className="mt-12">
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <Card
-          title="Categories"
-          count={categories.length}
-          icon={Layers}
-          href="/admin/categories"
-        />
+        <h2 className="mb-4 text-lg font-bold text-white">
+          Quick Actions
+        </h2>
 
-        <Card
-          title="Tables & QR"
-          count={12}
-          icon={LayoutGrid}
-          href="/admin/orders-by-table"
-        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
-        <Card
-          title="Add Items"
-          count={0}
-          icon={Star}
-          href="/admin/items"
-        />
-      </div>
+          <Link href="/admin/items">
 
-      {/* ⭐ QUICK ACTIONS */}
-      <div className="mt-14">
-        <h3 className="text-lg font-semibold text-gray-300 mb-3">Quick Actions</h3>
+            <div className="rounded-2xl border border-[#222] bg-[#111] p-5 transition hover:border-[#FFB100] hover:shadow-[0_0_25px_rgba(255,177,0,0.18)]">
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <p className="text-lg font-bold">
+                Add Product
+              </p>
+
+              <p className="mt-1 text-sm text-gray-400">
+                Create new menu item
+              </p>
+
+            </div>
+
+          </Link>
+
+          <Link href="/admin/categories">
+
+            <div className="rounded-2xl border border-[#222] bg-[#111] p-5 transition hover:border-[#FFB100] hover:shadow-[0_0_25px_rgba(255,177,0,0.18)]">
+
+              <p className="text-lg font-bold">
+                Manage Categories
+              </p>
+
+              <p className="mt-1 text-sm text-gray-400">
+                Organize restaurant menu
+              </p>
+
+            </div>
+
+          </Link>
 
           <Link href="/admin/orders/pending">
-            <div className="p-5 bg-[#111] border border-[#222] rounded-xl hover:border-yellow-400 transition">
-              <p className="text-xl font-semibold">View Active Orders</p>
-              <p className="text-gray-400 text-sm">Check all ongoing orders</p>
+
+            <div className="rounded-2xl border border-[#222] bg-[#111] p-5 transition hover:border-[#FFB100] hover:shadow-[0_0_25px_rgba(255,177,0,0.18)]">
+
+              <p className="text-lg font-bold">
+                Live Orders
+              </p>
+
+              <p className="mt-1 text-sm text-gray-400">
+                Monitor active customer orders
+              </p>
+
             </div>
+
           </Link>
 
-          <Link href="/admin/items/new">
-            <div className="p-5 bg-[#111] border border-[#222] rounded-xl hover:border-yellow-400 transition">
-              <p className="text-xl font-semibold">Add Menu Item</p>
-              <p className="text-gray-400 text-sm">Create a new dish</p>
-            </div>
-          </Link>
+          <Link href="/admin/orders/history">
 
-          <Link href="/admin/analytics">
-            <div className="p-5 bg-[#111] border border-[#222] rounded-xl hover:border-yellow-400 transition">
-              <p className="text-xl font-semibold">View Analytics</p>
-              <p className="text-gray-400 text-sm">Check weekly performance</p>
+            <div className="rounded-2xl border border-[#222] bg-[#111] p-5 transition hover:border-[#FFB100] hover:shadow-[0_0_25px_rgba(255,177,0,0.18)]">
+
+              <p className="text-lg font-bold">
+                Orders History
+              </p>
+
+              <p className="mt-1 text-sm text-gray-400">
+                Monitor Orders History
+              </p>
+
             </div>
+
           </Link>
 
         </div>
       </div>
+
     </div>
   );
 }

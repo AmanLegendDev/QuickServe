@@ -12,26 +12,64 @@ export const authOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        await connectDB();
+     async authorize(credentials) {
 
-        const { email, password } = credentials;
+  await connectDB();
 
-const user = await User.findOne({ email: email.toLowerCase().trim() });
-        if (!user) throw new Error("User Not Found");
+  const { email, password } =
+    credentials;
 
-        const isMatched = await bcrypt.compare(password, user.password);
-        if (!isMatched) throw new Error("Incorrect Password");
+  console.log(
+    "EMAIL:",
+    email
+  );
 
-        if (user.role !== "admin") throw new Error("Unauthorized");
+  const allUsers =
+    await User.find();
 
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
-      },
+  console.log(
+    "ALL USERS:",
+    allUsers
+  );
+
+  const user =
+    await User.findOne({
+      email:
+        email.toLowerCase().trim(),
+    });
+
+    console.log("FOUND USER:", user);
+
+  if (!user)
+    throw new Error(
+      "User Not Found"
+    );
+
+  const isMatched =
+    await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    console.log("PASSWORD MATCH:", isMatched);
+
+  if (!isMatched)
+    throw new Error(
+      "Incorrect Password"
+    );
+
+  if (user.role !== "admin")
+    throw new Error(
+      "Unauthorized"
+    );
+
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+}
     }),
   ],
 

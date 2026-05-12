@@ -1,25 +1,42 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import Table from "@/models/Table";
 
 export const dynamic = "force-dynamic";
 export const revalidate = false;
 
 // GET: list all tables
-export async function GET() {
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/db";
+import Table from "@/models/Table";
+
+export async function GET(req, { params }) {
   try {
     await connectDB();
-    const tables = await Table.find().sort({ number: 1, createdAt: 1 }).lean();
-    return NextResponse.json({ success: true, tables });
+
+    console.log("PARAMS:", params);
+
+    const table = await Table.findById(params.id);
+
+    if (!table) {
+      return NextResponse.json({
+        success: false,
+        message: "Table not found",
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      table,
+    });
+
   } catch (err) {
-    console.error("Tables GET Error:", err);
-    return NextResponse.json(
-      { success: false, message: "Failed to load tables" },
-      { status: 500 }
-    );
+
+    console.log("TABLE ERROR:", err);
+
+    return NextResponse.json({
+      success: false,
+      message: err.message,
+    });
   }
 }
-
 // POST: create a new table
 export async function POST(req) {
   try {

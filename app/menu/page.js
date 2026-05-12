@@ -5,6 +5,8 @@ import Category from "@/models/Category";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+
+
 export default async function MenuPage() {
   await connectDB();
 

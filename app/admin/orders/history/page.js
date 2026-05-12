@@ -1,208 +1,236 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Search, FileText, Timer } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export default function OrderHistoryPage() {
 
-/* ------------------ DATE HELPERS (IMPORTANT) ------------------ */
+  const [orders, setOrders] =
+    useState([]);
 
-// Mongo UTC → Local YYYY-MM-DD (browser compatible)
-function getLocalDateKey(date) {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`; // YYYY-MM-DD
-}
+  const [filtered, setFiltered] =
+    useState([]);
 
-// For UI heading (human readable)
-function displayDate(dateKey) {
-  const d = new Date(dateKey);
-  return d.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+  const [search, setSearch] =
+    useState("");
 
-// Full date + time for row
-function formatDateTime(date) {
-  return new Date(date).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-// Group orders by local date
-function groupByDate(list) {
-  const groups = {};
-  list.forEach((o) => {
-    const key = getLocalDateKey(o.createdAt);
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(o);
-  });
-  return groups;
-}
-
-/* ------------------ COMPONENT ------------------ */
-
-export default function SimpleOrdersHistory() {
-  const [orders, setOrders] = useState([]);
-  const [searchDate, setSearchDate] = useState("");
-  const [loading, setLoading] = useState(true);
-
+  // LOAD
   useEffect(() => {
+
     loadOrders();
+
   }, []);
 
   async function loadOrders() {
+
     try {
-      const res = await fetch("/api/orders", { cache: "no-store" });
-      const data = await res.json();
-console.log(
-  data.orders?.map(o => ({
-    status: o.status,
-    paymentStatus: o.paymentStatus,
-    createdAt: o.createdAt
-  }))
-);
 
-      // ✅ Only fully completed orders
-      const completed = (data.orders || []).filter(
-        (o) => o.status === "served" && o.paymentStatus === "paid"
+      const res = await fetch(
+        "/api/orders",
+        {
+          cache: "no-store",
+        }
       );
 
-      // Newest → Oldest
-      completed.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
+      const data =
+        await res.json();
 
-      setOrders(completed);
+      const served =
+        (data.orders || []).filter(
+          (o) =>
+            o.status ===
+            "served"
+        );
+
+      setOrders(served);
+      setFiltered(served);
+
     } catch (err) {
-      console.error("History load error:", err);
-    } finally {
-      setLoading(false);
+      console.log(err);
     }
   }
 
-  // ✅ Date filter (timezone safe)
-  const filtered = searchDate
-    ? orders.filter((o) => getLocalDateKey(o.createdAt) === searchDate)
-    : orders;
+  // SEARCH
+  useEffect(() => {
 
-  const grouped = groupByDate(filtered);
-  const dates = Object.keys(grouped).sort(
-    (a, b) => new Date(b) - new Date(a)
-  );
+    const value =
+      search.toLowerCase();
+
+    const filteredOrders =
+      orders.filter((order) => {
+
+        const table =
+          order.table
+            ?.toLowerCase()
+            .includes(value);
+
+        const items =
+          order.items?.some(
+            (item) =>
+              item.name
+                ?.toLowerCase()
+                .includes(value)
+          );
+
+        const date =
+          new Date(
+            order.createdAt
+          )
+            .toLocaleDateString()
+            .includes(value);
+
+        return (
+          table ||
+          items ||
+          date
+        );
+      });
+
+    setFiltered(
+      filteredOrders
+    );
+
+  }, [search, orders]);
 
   return (
-    <div className="p-4 sm:p-6 text-white">
-      {/* BACK */}
-      <Link
-        href="/admin"
-        className="inline-block mb-4 px-4 py-2 rounded-lg bg-[#111] border border-[#222]"
-      >
-        ← Back
-      </Link>
+    <div className="min-h-screen bg-[#111111] px-4 py-6 text-white">
 
       {/* HEADER */}
-      <h1 className="text-3xl font-bold mb-1">Completed Order History</h1>
-      <p className="text-gray-400 mb-6">
-        Only fully served and fully paid orders are shown.
-      </p>
+      <div className="mb-8">
+
+        <h1 className="text-4xl font-extrabold">
+
+          <span className="text-[#F5B041]">
+            Order
+          </span>{" "}
+
+          History
+
+        </h1>
+
+        <p className="mt-2 text-sm text-gray-400">
+          Served customer orders
+        </p>
+
+      </div>
 
       {/* SEARCH */}
-      <div className="flex items-center gap-3 mb-6 bg-[#111] px-3 py-3 rounded-xl border border-[#222]">
-        <Search className="text-gray-400" size={20} />
+      <div className="mb-6">
+
         <input
-          type="date"
-          className="bg-transparent outline-none flex-1 text-white"
-          value={searchDate}
-          onChange={(e) => setSearchDate(e.target.value)}
+          type="text"
+          placeholder="Search by table, product or date..."
+          value={search}
+          onChange={(e) =>
+            setSearch(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] px-4 py-3 text-sm text-white outline-none focus:border-[#F5B041]"
         />
-        {searchDate && (
-          <button
-            className="text-sm text-gray-400"
-            onClick={() => setSearchDate("")}
-          >
-            Clear
-          </button>
-        )}
+
       </div>
-
-      {/* STATES */}
-      {loading && (
-        <p className="text-gray-400 text-center mt-10">
-          Loading order history…
-        </p>
-      )}
-
-      {!loading && dates.length === 0 && (
-        <p className="text-gray-400 text-center mt-10">
-          No completed orders found.
-        </p>
-      )}
 
       {/* ORDERS */}
-      <div className="space-y-10">
-        {dates.map((dateKey) => (
-          <div key={dateKey}>
-            <h2 className="text-xl font-bold text-green-400 mb-3">
-              {displayDate(dateKey)}
-            </h2>
+      <div className="space-y-5">
 
-            <div className="space-y-3">
-              {grouped[dateKey].map((o) => (
-                <div
-                  key={o._id}
-                  className="bg-[#0f0f0f] p-4 rounded-xl border border-[#222]"
-                >
-                  <div className="flex justify-between items-start">
+        {filtered.length === 0 && (
+
+          <div className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-10 text-center">
+
+            <p className="text-gray-400">
+              No served orders found
+            </p>
+
+          </div>
+        )}
+
+        {filtered.map((order) => (
+
+          <div
+            key={order._id}
+            className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5"
+          >
+
+            {/* TOP */}
+            <div className="flex items-start justify-between gap-4">
+
+              <div>
+
+                <h2 className="text-lg font-bold text-white">
+                  {order.table}
+                </h2>
+
+                <p className="mt-1 text-xs text-gray-400">
+                  {new Date(
+                    order.createdAt
+                  ).toLocaleString()}
+                </p>
+
+              </div>
+
+              <div className="rounded-full bg-green-500/10 px-3 py-1 text-xs font-semibold text-green-400">
+
+                Served
+
+              </div>
+
+            </div>
+
+            {/* ITEMS */}
+            <div className="mt-5 space-y-3">
+
+              {order.items?.map(
+                (item, index) => (
+
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded-xl bg-[#111111] p-3"
+                  >
+
                     <div>
-                      <div className="text-sm text-gray-400 flex items-center gap-1">
-                        <Timer size={14} />
-                        {formatDateTime(o.createdAt)}
-                      </div>
 
-                      <h3 className="text-xl font-semibold mt-1 text-white">
-                        { o.table}
-                      </h3>
-
-                      <p className="text-gray-400 text-sm mt-1">
-                        {o.totalQty} items • ₹{o.totalPrice}
+                      <p className="text-sm font-semibold text-white">
+                        {item.name}
                       </p>
 
-                      <p className="text-xs text-gray-500 mt-1">
-                        KOT: {o.kotId || "N/A"}
+                      <p className="mt-1 text-xs text-gray-400">
+                        Qty: {item.qty}
                       </p>
 
-                      <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-600">
-                        COMPLETED
-                      </span>
                     </div>
 
-                    {/* BILL */}
-                    <Link
-                      href={`/admin/orders/bill/${o._id}`}
-                      className="px-3 py-2 rounded-lg bg-[#222] hover:bg-[#333] text-white flex items-center gap-1"
-                    >
-                      <FileText size={16} />
-                      Bill
-                    </Link>
+                    <p className="text-sm font-bold text-[#F5B041]">
+                      ₹
+                      {item.price *
+                        item.qty}
+                    </p>
+
                   </div>
-                </div>
-              ))}
+                )
+              )}
+
             </div>
+
+            {/* TOTAL */}
+            <div className="mt-5 flex items-center justify-between border-t border-[#2A2A2A] pt-4">
+
+              <p className="text-sm text-gray-400">
+                Total Bill
+              </p>
+
+              <p className="text-xl font-extrabold text-[#F5B041]">
+                ₹
+                {order.finalPrice ||
+                  order.totalPrice}
+              </p>
+
+            </div>
+
           </div>
         ))}
+
       </div>
 
-      <div className="h-10" />
     </div>
   );
 }
