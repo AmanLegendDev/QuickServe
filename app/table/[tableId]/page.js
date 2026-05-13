@@ -57,7 +57,7 @@ export default function TablePage({ params }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center">
-      Opening Menu...
+      Opening Menuuu...
     </div>
   );
 }

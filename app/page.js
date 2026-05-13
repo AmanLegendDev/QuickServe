@@ -24,7 +24,7 @@ export default function HomePage() {
         />
 
         <h1 className="text-4xl sm:text-6xl font-extrabold text-center mt-4">
-          <span className="text-[#FFB100]">ONE</span>BITE Menu
+          <span className="text-[#FFB100]">QUICK</span>SERVE MENU
         </h1>
 
         <p className="text-gray-400 mt-2 text-center text-lg max-w-md">
@@ -63,7 +63,7 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <p className="mt-14 text-gray-500 text-sm">
-        © Built with ❤️ for <span className="text-[#FFB100]">OneBite</span> by <span className="text-[#FFB100]">Aman</span>
+        © Built with ❤️<span className="text-[#FFB100]"></span> by <span className="text-[#FFB100]">Aman</span>
       </p>
     </div>
   );
