@@ -27,6 +27,7 @@ export default function MenuClient({
 
   const [recentOrder, setRecentOrder] = useState(null);
   const [localTableInfo, setLocalTableInfo] = useState(tableInfo);
+  const [toast, setToast] = useState(null);
 
   // CLEAR AFTER ORDER
   useEffect(() => {
@@ -118,6 +119,16 @@ export default function MenuClient({
     return inCart?.qty ?? 0;
   };
 
+  // PREMIUM UX TOAST
+const showToast = (message) => {
+
+  setToast(message);
+
+  setTimeout(() => {
+    setToast(null);
+  }, 2000);
+};
+
   // STOCK HELPER
   const canAddMore = (item) => {
     if (item.outOfStock) return false;
@@ -170,6 +181,43 @@ export default function MenuClient({
 
           </div>
         </div>
+
+        {/* QUICK GUIDE */}
+<div className="mt-4 overflow-hidden rounded-2xl border border-yellow-500/15 bg-[#151515] px-3 py-2 shadow-[0_0_18px_rgba(255,199,0,0.06)]">
+
+  <div className="flex items-center gap-2 text-[11px] font-semibold text-yellow-100/90 overflow-x-auto no-scrollbar">
+
+    <span className="whitespace-nowrap">
+      📱 Scan QR
+    </span>
+
+    <span className="text-yellow-500/60">
+      →
+    </span>
+
+    <span className="whitespace-nowrap">
+      ➕ Add Items
+    </span>
+
+    <span className="text-yellow-500/60">
+      →
+    </span>
+
+    <span className="whitespace-nowrap">
+      🛒 View Cart
+    </span>
+
+    <span className="text-yellow-500/60">
+      →
+    </span>
+
+    <span className="whitespace-nowrap">
+      🍽️ Send Order
+    </span>
+
+  </div>
+
+</div>
 
         {/* CATEGORY TABS */}
         <div
@@ -353,6 +401,13 @@ export default function MenuClient({
                             {stockBadge}
                           </div>
 
+                          {/* UX HELPER */}
+{qty === 0 && (
+  <p className="mt-3 text-[10px] font-medium text-yellow-200/75">
+    Tap + to add item
+  </p>
+)}
+
                           {/* PRICE + QTY */}
                           <div className="mt-4 flex items-center justify-between">
 
@@ -384,11 +439,22 @@ export default function MenuClient({
                                   if (addDisabled)
                                     return;
 
-                                  qty === 0
-                                    ? addToCart(item)
-                                    : increaseQty(
-                                        item._id
-                                      );
+                                  if (qty === 0) {
+
+  addToCart(item);
+
+  showToast(
+    `${item.name} added • View Cart to continue`
+  );
+
+} else {
+
+  increaseQty(item._id);
+
+  showToast(
+    `${item.name} quantity updated`
+  );
+}
                                 }}
                                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold active:scale-95
                                   ${
@@ -429,9 +495,9 @@ export default function MenuClient({
                 {totalQty} items
               </p>
 
-              <p className="text-xs text-gray-400">
-                Total ₹{totalPrice}
-              </p>
+             <p className="text-xs text-gray-400">
+  Ready to send your order
+</p>
 
             </div>
 
@@ -439,16 +505,31 @@ export default function MenuClient({
               onClick={() =>
                 router.push("/order-review")
               }
-              className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-extrabold text-black shadow-[0_0_18px_rgba(255,199,0,0.35)] active:scale-95"
-            >
-              View Cart
+className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-extrabold text-black shadow-[0_0_22px_rgba(255,199,0,0.45)] active:scale-95 animate-pulse"            >
+              View Cart & Send Order
             </button>
 
           </div>
 
         </div>
       )}
+      {/* PREMIUM UX TOAST */}
+{toast && (
+
+  <div className="fixed bottom-24 left-1/2 z-[999] -translate-x-1/2 px-4">
+
+    <div className="rounded-2xl border border-yellow-500/20 bg-[#111111]/95 px-5 py-3 shadow-[0_0_30px_rgba(255,199,0,0.18)] backdrop-blur-xl">
+
+      <p className="text-center text-xs font-semibold text-yellow-100 whitespace-nowrap">
+        {toast}
+      </p>
 
     </div>
+
+  </div>
+)}
+
+    </div>
+    
   );
 }

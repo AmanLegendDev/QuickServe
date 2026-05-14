@@ -201,8 +201,7 @@ export default function OrderSuccessPage() {
 
         <img
           src="/onebite-2.jpg"
-          className="w-32 h-32 object-cover rounded-full border-2 border-[#FFB100] shadow-[0_0_25px_rgba(255,177,0,0.5)]"
-        />
+className="w-32 h-32 object-contain bg-[#111] p-2 rounded-full border-2 border-[#FFB100] shadow-[0_0_25px_rgba(255,177,0,0.5)]"        />
 
       </motion.div>
 
@@ -210,15 +209,29 @@ export default function OrderSuccessPage() {
       <div className="text-center mt-6">
 
         <h1 className="text-3xl font-extrabold text-yellow-400">
-          Order Confirmed 🎉
+          Order Sent Successfully ✅
         </h1>
 
         <p className="mt-2 text-sm font-semibold text-yellow-300">
-          {statusText[liveStatus]}
+          {liveStatus === "pending"
+  ? "Your order has been sent to kitchen successfully 🍽️"
+  : statusText[liveStatus]}
         </p>
 
+        <div className="mt-4 flex justify-center">
+
+  <div className="rounded-full border border-green-500/20 bg-green-500/10 px-4 py-2 shadow-[0_0_18px_rgba(34,197,94,0.12)]">
+
+    <p className="text-xs font-bold text-green-400">
+      ✔ Kitchen Will Receive Your Order Instantly
+    </p>
+
+  </div>
+
+</div>
+
         {/* PROGRESS */}
-        <div className="flex justify-center gap-4 mt-5">
+        <div className="flex justify-center gap-5 mt-7">
 
           {statusSteps.map((step) => {
 
@@ -237,9 +250,9 @@ export default function OrderSuccessPage() {
                 <div
                   className={`w-4 h-4 rounded-full transition-all ${
                     active
-                      ? "bg-yellow-400 shadow-[0_0_10px_rgba(255,199,0,0.8)]"
-                      : "bg-gray-600"
-                  }`}
+  ? "bg-yellow-400 shadow-[0_0_20px_rgba(255,199,0,0.9)] animate-pulse duration-100"
+  : "bg-gray-700"
+                  }`} 
                 />
 
                 <p
@@ -259,6 +272,16 @@ export default function OrderSuccessPage() {
         </div>
       </div>
 
+      <div className="mt-8 rounded-2xl border border-yellow-500/10 bg-[#151515] px-4 py-3 text-center shadow-[0_0_18px_rgba(255,199,0,0.05)]">
+
+  <p className="text-xs font-semibold text-yellow-100/85">
+
+    📡 Live Order Status Updates Enabled
+
+  </p>
+
+</div>
+
       {/* SUMMARY */}
       <motion.div
         initial={{
@@ -272,11 +295,11 @@ export default function OrderSuccessPage() {
         transition={{
           duration: 0.5,
         }}
-        className="bg-[#111] rounded-2xl border border-[#222] shadow-xl p-6 mt-10"
+        className="bg-[#111] rounded-3xl border border-yellow-500/10 shadow-[0_0_35px_rgba(255,199,0,0.06)] p-6 mt-10"
       >
 
         <h2 className="text-xl font-bold mb-5 text-yellow-400">
-          Order Summary
+          Your Order Summary
         </h2>
 
         {/* ITEMS */}
@@ -286,7 +309,7 @@ export default function OrderSuccessPage() {
 
             <div
               key={item._id}
-              className="flex justify-between bg-[#1a1a1a] p-4 rounded-xl border border-[#333]"
+              className="flex justify-between bg-[#1a1a1a] p-4 rounded-2xl border border-yellow-500/10"
             >
 
               <div>
@@ -318,10 +341,9 @@ export default function OrderSuccessPage() {
         <div className="space-y-2 text-[15px]">
 
           <div className="flex justify-between">
-
-            <span className="text-gray-400">
-              Total
-            </span>
+<span className="text-gray-400">
+  Final Total
+</span>
 
             <span className="font-bold text-yellow-400 text-lg">
               ₹
@@ -334,7 +356,7 @@ export default function OrderSuccessPage() {
         </div>
 
         {/* TABLE */}
-        <div className="mt-6 bg-yellow-400 text-black p-3 rounded-lg text-center font-extrabold text-lg">
+        <div className="mt-6 rounded-2xl border border-yellow-400/20 bg-yellow-400 px-4 py-4 text-center font-extrabold text-lg text-black shadow-[0_0_25px_rgba(255,199,0,0.25)]">
 
           Table:{" "}
           {order.table || "—"}
@@ -354,7 +376,7 @@ export default function OrderSuccessPage() {
       <div className="mt-12 text-center opacity-70">
 
         <p className="text-xs">
-          © QuickServe
+          Powered by QuickServe Digital Dining
         </p>
 
       </div>
@@ -367,9 +389,9 @@ export default function OrderSuccessPage() {
             (window.location.href =
               "/menu")
           }
-          className="bg-yellow-400 hover:bg-yellow-300 px-10 py-3 rounded-full text-lg font-bold text-black shadow-[0_0_20px_rgba(255,177,0,0.4)] active:scale-95"
+          className="bg-yellow-400 hover:bg-yellow-300 px-10 py-3 rounded-full text-lg font-bold text-black   shadow-[0_0_28px_rgba(255,177,0,0.55)] active:scale-95"
         >
-          Back to Menu
+          Order More Items
         </button>
 
       </div>

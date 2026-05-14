@@ -188,9 +188,12 @@ export default function OrderReviewPage() {
           Review Order
         </h1>
 
-        <p className="mt-2 text-sm text-yellow-200/70">
-          Final check before sending to kitchen 🍽️
-        </p>
+     <p className="mt-2 text-sm text-yellow-200/80 leading-relaxed">
+  Review your selected items and tap
+  <span className="font-bold text-yellow-400">
+    {" "}Send Order To Kitchen
+  </span>
+</p>
 
         {tableInfo && (
           <div className="mt-3">
@@ -203,6 +206,38 @@ export default function OrderReviewPage() {
         )}
 
       </div>
+
+      {/* QUICK GUIDE */}
+<div className="mt-6 rounded-2xl border border-yellow-500/10 bg-[#151515] px-4 py-3 shadow-[0_0_18px_rgba(255,199,0,0.06)]">
+
+  <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-yellow-100/85">
+
+    <div className="flex items-center gap-1">
+      🍽️
+      <span>Review Items</span>
+    </div>
+
+    <span className="text-yellow-500/50">
+      →
+    </span>
+
+    <div className="flex items-center gap-1">
+      📤
+      <span>Send Order</span>
+    </div>
+
+    <span className="text-yellow-500/50">
+      →
+    </span>
+
+    <div className="flex items-center gap-1">
+      👨‍🍳
+      <span>Kitchen Receives</span>
+    </div>
+
+  </div>
+
+</div>
 
       {/* ITEMS */}
       <div className="mt-8 space-y-4">
@@ -250,6 +285,10 @@ export default function OrderReviewPage() {
 
               </div>
 
+              <p className="mb-2 text-[10px] font-medium text-yellow-200/70">
+  Adjust quantity if needed
+</p>
+
               {/* QTY */}
               <div className="mt-auto flex items-center gap-2 pt-4">
 
@@ -288,11 +327,11 @@ export default function OrderReviewPage() {
       <div className="mt-8">
 
         <h2 className="text-sm font-semibold text-yellow-300">
-          Add Note
+          Special Instructions
         </h2>
 
         <textarea
-          placeholder="Extra spicy, no onion, etc..."
+          placeholder="Add cooking instructions for kitchen..."
           value={note}
           onChange={(e) =>
             setNote(e.target.value)
@@ -308,8 +347,8 @@ export default function OrderReviewPage() {
         <div className="flex items-center justify-between text-sm">
 
           <span className="text-gray-400">
-            Items
-          </span>
+  Total Items
+</span>
 
           <span className="font-bold text-yellow-300">
             {totalQty}
@@ -348,21 +387,27 @@ export default function OrderReviewPage() {
             </p>
 
           </div>
+          <div className="mr-4 hidden sm:block">
+
+</div>
 
           {/* BUTTON */}
           <button
             onClick={placeOrder}
             disabled={isSubmitting}
-            className={`rounded-full px-7 py-3 text-sm font-extrabold transition active:scale-95 shadow-[0_0_18px_rgba(255,199,0,0.25)]
+            className={`rounded-full px-7 py-3 text-sm font-extrabold transition active:scale-95 shadow-[0_0_24px_rgba(255,199,0,0.38)]
               ${
                 isSubmitting
                   ? "bg-gray-700 text-gray-300"
-                  : "bg-yellow-400 hover:bg-yellow-300 text-black"
+                  :"bg-yellow-400 hover:bg-yellow-300 text-black animate-pulse"
               }`}
           >
+              <p className="absolute -top-5 right-4 text-[10px] font-medium text-yellow-100/70">
+  Tap button to send order
+</p>
             {isSubmitting
-              ? "Sending..."
-              : "Send Order"}
+              ? "Sending To Kitchen..."
+              : "Send Order To Kitchen"}
           </button>
 
         </div>
